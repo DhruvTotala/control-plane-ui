@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactFlow, { Background, Controls } from 'reactflow';
-import type { Node, Edge } from 'reactflow'; // "type" keyword to avoid Vite errors
+import type { Node, Edge } from 'reactflow'; 
 import 'reactflow/dist/style.css';
 import axios from 'axios';
+
+// YAHAN NAYA VARIABLE ADD KIYA HAI 👇
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const initialNodes: Node[] = [
   { id: '1', data: { label: 'Control Plane: Init Task' }, position: { x: 250, y: 50 }, style: { backgroundColor: '#e2e8f0', padding: 15, borderRadius: 8 } },
@@ -21,18 +24,14 @@ function App() {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('IDLE');
   
-  // Naya state logs store karne ke liye
   const [logs, setLogs] = useState<string>("");
-
-  // Auto-scroll ke liye reference
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   const startWorkflow = async () => {
     try {
       setStatus('PENDING');
-      setLogs("System: Initializing request to backend...\n"); // Initial local log
+      setLogs("System: Initializing request to backend...\n"); 
       
-      // Graph ko reset aur animate karo
       setNodes((nds) => nds.map((n) => {
         if (n.id === '1') return { ...n, style: { ...n.style, backgroundColor: '#86efac' } };
         if (n.id === '2') return { ...n, style: { ...n.style, backgroundColor: '#fef08a' } };
@@ -40,7 +39,8 @@ function App() {
       }));
       setEdges((eds) => eds.map((e) => ({ ...e, animated: true })));
 
-      const response = await axios.post('http://localhost:8080/api/workflows/create?taskType=IMPORT_CLUSTER');
+      // YAHAN LOCALHOST HATA KAR API_BASE_URL LAGA DIYA HAI 👇
+      const response = await axios.post(`${API_BASE_URL}/api/workflows/create?taskType=IMPORT_CLUSTER`);
       setTaskId(response.data.id);
       
     } catch (error) {
@@ -55,10 +55,10 @@ function App() {
     if (taskId && status === 'PENDING') {
       interval = setInterval(async () => {
         try {
-          const res = await axios.get(`http://localhost:8080/api/workflows/${taskId}`);
+          // YAHAN BHI LOCALHOST HATA KAR API_BASE_URL LAGA DIYA HAI 👇
+          const res = await axios.get(`${API_BASE_URL}/api/workflows/${taskId}`);
           const currentStatus = res.data.status;
           
-          // YAHAN CHANGE KIYA HAI: Frontend ka message + Backend ke logs
           if (res.data.terminalLogs) {
             setLogs("System: Initializing request to backend...\n" + res.data.terminalLogs);
           }
@@ -85,7 +85,6 @@ function App() {
     return () => clearInterval(interval);
   }, [taskId, status]);
 
-  // Jaise hi 'logs' state change hogi, terminal auto-scroll karega bottom tak
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
@@ -118,11 +117,11 @@ function App() {
 
       {/* Live Terminal Box */}
       <div style={{
-        backgroundColor: "#0d1117", // GitHub theme dark background
-        color: "#4af626", // Hacker terminal green
+        backgroundColor: "#0d1117", 
+        color: "#4af626", 
         padding: "15px",
         fontFamily: "'Courier New', Courier, monospace",
-        height: "250px", // Fixed height for terminal
+        height: "250px", 
         overflowY: "auto",
         borderTop: "4px solid #30363d",
       }}>
@@ -138,7 +137,6 @@ function App() {
           ) : (
             <div style={{ color: "#8b949e" }}>Waiting for task execution...</div>
           )}
-          {/* This empty div is the target for auto-scrolling */}
           <div ref={terminalEndRef} />
         </div>
       </div>
